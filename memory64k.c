@@ -1,5 +1,7 @@
 #include "memory64k.h"
 
+#include <malloc.h>
+
 uint8_t* mem[256];
 struct W65C02S* inst[256] = { 0 };
 int nInst = 0;

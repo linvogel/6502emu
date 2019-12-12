@@ -1,6 +1,7 @@
 #include "w65c02s.h"
 
 #include <stdio.h>
+#include <malloc.h>
 
 #define STATE_FETCH_OPCODE 0
 #define STATE_EXECUTE 1
@@ -261,7 +262,7 @@ void busEnable(struct W65C02S* instance, uint8_t state)
 
 void interruptRequest(struct W65C02S* instance, uint8_t state)
 {
-	if (state) {
+	if (!state) {
 		instance->pins &= ~PIN_IRQ_B;
 		instance->handlingInterrupt = 1;
 	} else {
@@ -298,6 +299,7 @@ uint8_t readWrite(struct W65C02S* instance)
 {
 	return (instance->pins & PIN_RW_B) ? 1 : 0;
 }
+
 uint8_t ready(struct W65C02S* instance, uint8_t state)
 {
 	
@@ -597,22 +599,98 @@ void   brk_stack(struct W65C02S* instance)
 
 void   ora_zeropage_indexed_indirect(struct W65C02S* instance)
 {
-	
+	static uint16_t tmp;
+	if (instance->timingControl == 0) {
+		instance->addressBus = instance->pc++;
+		instance->pins |= PIN_RW_B;
+	}
+	if (instance->timingControl == 1) {
+		tmp = instance->dataBus + instance->x;
+		instance->addressBus = tmp;
+		instance->pins |= PIN_RW_B;
+	}
+	if (instance->timingControl == 2) {
+		tmp = 0x0000 | instance->dataBus;
+		instance->addressBus++;
+		instance->pins |= PIN_RW_B;
+	}
+	if (instance->timingControl == 3) {
+		tmp = (instance->dataBus << 8) | tmp;
+		instance->addressBus = tmp;
+		instance->pins |= PIN_RW_B;
+	}
+	if (instance->timingControl == 4) {
+		tmp = instance->dataBus;
+	}
+	if (instance->timingControl == 5) {
+		instance->a |= tmp;
+		instance->internalState = STATE_FETCH_OPCODE;
+	}
 }
 
 void   tsb_zeropage(struct W65C02S* instance)
 {
-	
+	static uint16_t tmp;
+	if (instance->timingControl == 0) {
+		instance->pins |= PIN_RW_B;
+		instance->addressBus = instance->pc++;
+	}
+	if (instance->timingControl == 1) {
+		tmp = instance->dataBus;
+		instance->pins |= PIN_RW_B;
+		instance->addressBus = instance->pc++;
+	}
+	if (instance->timingControl == 2) {
+		instance->addressBus = (instance->dataBus << 8) | tmp;
+		instance->pins |= PIN_RW_B;
+	}
+	if (instance->timingControl == 3) {
+		instance->stateRegister = (instance->a & instance->dataBus) ? instance->stateRegister & ~P_ZERO : instance->stateRegister | P_ZERO;
+		instance->dataBus |= instance->a;
+		instance->pins &= ~PIN_RW_B;
+	}
+	if (instance->timingControl == 4) {
+		instance->internalState = STATE_FETCH_OPCODE;
+	}
 }
 
 void   ora_zeropage(struct W65C02S* instance)
 {
-	
+	if (instance->timingControl == 0) {
+		instance->addressBus = instance->pc++;
+		instance->pins |= PIN_RW_B;
+	}
+	if (instance->timingControl == 1) {
+		instance->addressBus = 0x0000 | instance->dataBus;
+		instance->pins |= PIN_RW_B;
+	}
+	if (instance->timingControl == 2) {
+		instance->a |= instance->dataBus;
+		instance->internalState = STATE_FETCH_OPCODE;
+	}
 }
 
 void   asl_zeropage(struct W65C02S* instance)
 {
-	
+	static uint16_t tmp;
+	if (instance->timingControl == 0) {
+		instance->addressBus = instance->pc++;
+		instance->pins |= PIN_RW_B;
+	}
+	if (instance->timingControl == 1) {
+		instance->addressBus = instance->dataBus;
+		instance->pins |= PIN_RW_B;
+	}
+	if (instance->timingControl == 2) {
+		instance->stateRegister = (instance->dataBus & 0x80) ? (instance->stateRegister | P_CARRY) : (instance->stateRegister & ~P_CARRY);
+	}
+	if (instance->timingControl == 3) {
+		instance->dataBus <<= 1;
+		instance->pins &= ~PIN_RW_B;
+	}
+	if (instance->timingControl == 4) {
+		instance->internalState = STATE_FETCH_OPCODE;
+	}
 }
 
 void   rmb0_zeropage(struct W65C02S* instance)
@@ -627,6 +705,14 @@ void   php_stack(struct W65C02S* instance)
 
 void   ora_immediate(struct W65C02S* instance)
 {
+	if (instance->timingControl == 0) {
+		instance->addressBus = instance->pc++;
+		instance->pins |= PIN_RW_B;
+	}
+	if (instance->timingControl == 1) {
+		instance->a |= instance->dataBus;
+		instance->internalState = STATE_FETCH_OPCODE;
+	}
 	
 }
 

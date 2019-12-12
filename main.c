@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <signal.h>
+#include <malloc.h>
 
 #include "memory64k.h"
 #include "w65c02s.h"
@@ -51,19 +52,34 @@ int main( void )
 	puts("Writing initial memory");
 	for (int i = 0; i < 1024*64; i++) memInit[i] = 0xEA;
 	
-	memInit[0] = OP_LDA_IMMEDIATE;
-	memInit[1] = 0x42;
-	memInit[2] = OP_STA_ABSOLUTE;
-	memInit[3] = 0x00;
-	memInit[4] = 0x80;
+	memInit[0x0010] = OP_LDA_IMMEDIATE;
+	memInit[0x0011] = 0x42;
+	memInit[0x0012] = OP_ORA_ZEROPAGE_INDEXED_INDIRECT;
+	memInit[0x0013] = 0xA0;
+	memInit[0x0014] = OP_ORA_ZEROPAGE;
+	memInit[0x0015] = 0xA2;
+	memInit[0x0016] = OP_ASL_ZEROPAGE;
+	memInit[0x0017] = 0xA1;
+	
+	memInit[0x0050] = OP_STA_ABSOLUTE;
+	memInit[0x0051] = 0x00;
+	memInit[0x0052] = 0x00;
+	
+	memInit[0x00A0] = 0x00;
+	memInit[0x00A1] = 0x10;
+	memInit[0x00A2] = 0x01;
+	
+	
+	
+	memInit[0x1000] = 0x24;
 	
 	writeMem64k(processor, memInit);
 	
 	puts("Starting clock...");
 	unsigned int i = 0;
-	while (i++ < 25) {
+	while (processor->pc < 0x00A0) {
 		clock(processor);
-		printf("Address: %04X Data: %02X RW: %c   PINS: %08x\n", processor->addressBus, processor->dataBus, processor->pins & PIN_RW_B ? 'r' : 'w', processor->pins);
+		printf("Address: %04X Data: %02X RW: %c   PINS: 0x%016llx\n", processor->addressBus, processor->dataBus, (processor->pins & PIN_RW_B) ? 'r' : 'w', processor->pins);
 		//getchar(); printf("\x1b[1A");
 	}
 	
