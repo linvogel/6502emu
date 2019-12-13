@@ -700,7 +700,19 @@ void   rmb0_zeropage(struct W65C02S* instance)
 
 void   php_stack(struct W65C02S* instance)
 {
-	
+	if (instance->timingControl == 0) {
+		instance->pins &= ~PIN_RW_B;
+		instance->addressBus = instance->sp;
+		instance->dataBus = instance->stateRegister;
+	}
+	if (instance->timingControl == 1) {
+		instance->pins |= PIN_RW_B;
+		instance->sp--;
+	}
+	if (instance->timingControl == 2) {
+		
+		instance->internalState = STATE_FETCH_OPCODE;
+	}
 }
 
 void   ora_immediate(struct W65C02S* instance)
