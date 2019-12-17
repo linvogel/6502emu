@@ -10,6 +10,7 @@ public class Assembler6502 {
 	public static final String PATTERN_LABEL_DEFINITION = "^[a-zA-Z][\\w]*:";
 	public static final String PATTERN_LABEL_REFERENCE = "^\\.[a-zA-Z][\\w]*";
 	public static final String PATTERN_OPCODE = "^([a-zA-Z]{3,3}[0-9]?([\\s]|[\\s]*#.*$|$))";
+	public static final String PATTERN_ZEROPAGE_RELATIVE_LABEL = "^(\\$[[:xdigit:]]{2},[\\s]*[a-zA-Z][\\w]*)([\\s]|[\\s]*#.*$|$)";
 	
 	public static final String PATTERN_ADDR_ABSOLUTE = "^((\\$[[:xdigit:]]{4})|(\\.[a-zA-Z][\\w]*))([\\s]|[\\s]*#.*$|$)";
 	public static final String PATTERN_ADDR_ABSOLUTE_INDEXED_INDIRECT = "^(\\(\\$[[:xdigit:]]{4}),[xX]\\)([\\s]|[\\s]*#.*$|$)";
@@ -166,16 +167,200 @@ public class Assembler6502 {
 		}
 	}
 	
+	private static void parse_bvc() {
+		
+	}
+	
+	private static void parse_bvs() {
+		
+	}
+	
+	private static void parse_brk() {
+		buffer[addr++] = 0x00;
+	}
+	
+	private static void parse_bmi() {
+		parseLabelRef((byte)0x30, 1);
+	}
+	
+	private static void parse_bne() {
+		parseLabelRef((byte)0xd0, 1);
+	}
+	
+	private static void parse_bpl() {
+		parseLabelRef((byte)0x10, 1);
+	}
+	
+	private static void parse_bra() {
+		parseLabelRef((byte)0x80, 1);
+	}
+	
+	private static void parse_bit() {
+		if (hasImmediate()) parseImmediate((byte)0x89);
+		else if (hasZeropage()) parseZeropage((byte)0x24);
+		else if (hasZeropageXIndexed()) parseZeropageXIndexed((byte)0x34);
+		else if (hasAbsolute()) parseAbsolute((byte)0x2c);
+		else if (hasAbsoluteXIndexed()) parseAbsoluteXIndexed((byte)0x3c);
+	}
+	
+	private static void parse_beq() {
+		parseLabelRef((byte)0xF0, 1);
+	}
+	
+	private static void parse_bcs() {
+		parseLabelRef((byte)0xb0, 1);
+	}
+	
+	private static void parse_bcc() {
+		parseLabelRef((byte)0x90, 1);
+	}
+	
+	private static void parse_rmb0() {
+		parseZeropage((byte)0x07);
+	}
+	
+	private static void parse_rmb1() {
+		parseZeropage((byte)0x17);
+	}
+	
+	private static void parse_rmb2() {
+		parseZeropage((byte)0x27);
+	}
+	
+	private static void parse_rmb3() {
+		parseZeropage((byte)0x37);
+	}
+	
+	private static void parse_rmb4() {
+		parseZeropage((byte)0x47);
+	}
+	
+	private static void parse_rmb5() {
+		parseZeropage((byte)0x57);
+	}
+	
+	private static void parse_rmb6() {
+		parseZeropage((byte)0x67);
+	}
+	
+	private static void parse_rmb7() {
+		parseZeropage((byte)0x77);
+	}
+	
+	private static void parse_smb0() {
+		parseZeropage((byte)0x87);
+	}
+	
+	private static void parse_smb1() {
+		parseZeropage((byte)0x97);
+	}
+	
+	private static void parse_smb2() {
+		parseZeropage((byte)0xa7);
+	}
+	
+	private static void parse_smb3() {
+		parseZeropage((byte)0xb7);
+	}
+	
+	private static void parse_smb4() {
+		parseZeropage((byte)0xc7);
+	}
+	
+	private static void parse_smb5() {
+		parseZeropage((byte)0xd7);
+	}
+	
+	private static void parse_smb6() {
+		parseZeropage((byte)0xe7);
+	}
+	
+	private static void parse_smb7() {
+		parseZeropage((byte)0xf7);
+	}
+	
+	private static void parse_bbr0() {
+		parseZeropageRelative((byte)0x0f);
+	}
+	
+	private static void parse_bbr1() {
+		parseZeropageRelative((byte)0x1f);
+	}
+	
+	private static void parse_bbr2() {
+		parseZeropageRelative((byte)0x2f);
+	}
+	
+	private static void parse_bbr3() {
+		parseZeropageRelative((byte)0x3f);
+	}
+	
+	private static void parse_bbr4() {
+		parseZeropageRelative((byte)0x4f);
+	}
+	
+	private static void parse_bbr5() {
+		parseZeropageRelative((byte)0x5f);
+	}
+	
+	private static void parse_bbr6() {
+		parseZeropageRelative((byte)0x6f);
+	}
+	
+	private static void parse_bbr7() {
+		parseZeropageRelative((byte)0x7f);
+	}
+	
+	private static void parse_bbs0() {
+		parseZeropageRelative((byte)0x8f);
+	}
+	
+	private static void parse_bbs1() {
+		parseZeropageRelative((byte)0x9f);
+	}
+	
+	private static void parse_bbs2() {
+		parseZeropageRelative((byte)0xaf);
+	}
+	
+	private static void parse_bbs3() {
+		parseZeropageRelative((byte)0xbf);
+	}
+	
+	private static void parse_bbs4() {
+		parseZeropageRelative((byte)0xcf);
+	}
+	
+	private static void parse_bbs5() {
+		parseZeropageRelative((byte)0xdf);
+	}
+	
+	private static void parse_bbs6() {
+		parseZeropageRelative((byte)0xef);
+	}
+	
+	private static void parse_bbs7() {
+		parseZeropageRelative((byte)0xff);
+	}
+	
+	private static void parse_asl() {
+		if (hasZeropage()) parseZeropage((byte)0x06);
+		else if (hasAbsolute()) parseAbsolute((byte)0x0e);
+		else if (hasZeropageXIndexed()) parseZeropageXIndexed((byte)0x16);
+		else if (hasAbsoluteXIndexed()) parseAbsoluteXIndexed((byte)0x1e);
+		else buffer[addr++] = (byte)0x0a;
+	}
+	
 	private static void parse_and() {
-		if (has()) parse((byte)0x);
-		if (has()) parse((byte)0x);
-		if (has()) parse((byte)0x);
-		if (has()) parse((byte)0x);
-		if (has()) parse((byte)0x);
-		if (has()) parse((byte)0x);
-		if (has()) parse((byte)0x);
-		if (has()) parse((byte)0x);
-		if (has()) parse((byte)0x);
+		if (hasZeropage()) parseZeropage((byte)0x25);
+		else if (hasZeropageIndexedIndirect()) parseZeropageIndexedIndirect((byte)0x21);
+		else if (hasZeropageIndirectYIndexed()) parseZeropageIndirectYIndexed((byte)0x31);
+		else if (hasZeropageIndexedIndirect()) parseZeropageIndexedIndirect((byte)0x31);
+		else if (hasZeropageXIndexed()) parseZeropageXIndexed((byte)0x35);
+		else if (hasImmediate()) parseImmediate((byte)0x29);
+		else if (hasAbsolute()) parseAbsolute((byte)0x2d);
+		else if (hasAbsoluteXIndexed()) parseAbsoluteXIndexed((byte)0x3d);
+		else if (hasAbsoluteYIndexed()) parseAbsoluteYIndexed((byte)0x39);
 	}
 	
 	private static void parse_adc() {
@@ -203,6 +388,32 @@ public class Assembler6502 {
 		labels.put(label, addr);
 	}
 	
+	public static boolean hasZeropageRelative() {
+		return scanner.hasNext(PATTERN_ZEROPAGE_RELATIVE_LABEL);
+	}
+	
+	public static void parseZeropageRelative(byte opcode) {
+		String[] operand = scanner.next(PATTERN_ZEROPAGE_RELATIVE_LABEL).substring(1).split(":");
+		int zp = Integer.parseInt(operand[0]);
+		String label = operand[1].split("#")[0].trim();
+		buffer[addr++] = opcode;
+		buffer[addr++] = (byte) (0xFF & zp);
+		refs.put(label, addr);
+		buffer[addr++] = 1;
+	}
+	
+	public static boolean hasLabelRef() {
+		return scanner.hasNext(PATTERN_LABEL_REFERENCE);
+	}
+	
+	public static void parseLabelRef(byte opcode, int size) {
+		buffer[addr++] = opcode;
+		String label = scanner.next(PATTERN_LABEL_REFERENCE).substring(1);
+		refs.put(label, addr);
+		buffer[addr] = (byte) size;
+		addr += size;
+	}
+	
 	public static boolean hasAbsolute() {
 		return scanner.hasNext(PATTERN_ADDR_ABSOLUTE);
 	}
@@ -210,7 +421,7 @@ public class Assembler6502 {
 	public static void parseAbsolute(byte opcode) {
 		buffer[addr++] = opcode;
 		String str = scanner.next(PATTERN_ADDR_ABSOLUTE).substring(1, 5);
-		short tmp = Short.parseShort(str, 16);
+		int tmp = Integer.parseInt(str, 16);
 		buffer[addr++] = (byte) (tmp & 0xFF);
 		buffer[addr++] = (byte) ((tmp >> 8) & 0xFF);
 	}
@@ -222,7 +433,7 @@ public class Assembler6502 {
 	public static void parseAbsoluteIndexedIndirect(byte opcode) {
 		buffer[addr++] = opcode;
 		String str = scanner.next(PATTERN_ADDR_ABSOLUTE_INDEXED_INDIRECT).substring(2, 6);
-		short tmp = Short.parseShort(str, 16);
+		int tmp = Integer.parseInt(str, 16);
 		buffer[addr++] = (byte) (tmp & 0xFF);
 		buffer[addr++] = (byte) ((tmp >> 8) & 0xFF);
 	}
@@ -234,7 +445,7 @@ public class Assembler6502 {
 	public static void parseAbsoluteXIndexed(byte opcode) {
 		buffer[addr++] = opcode;
 		String str = scanner.next(PATTERN_ADDR_ABSOLUTE_INDEXED_X).substring(1, 5);
-		short tmp = Short.parseShort(str, 16);
+		int tmp = Integer.parseInt(str, 16);
 		buffer[addr++] = (byte) (tmp & 0xFF);
 		buffer[addr++] = (byte) ((tmp >> 8) & 0xFF);
 	}
@@ -246,7 +457,7 @@ public class Assembler6502 {
 	public static void parseAbsoluteYIndexed(byte opcode) {
 		buffer[addr++] = opcode;
 		String str = scanner.next(PATTERN_ADDR_ABSOLUTE_INDEXED_Y).substring(1, 5);
-		short tmp = Short.parseShort(str, 16);
+		int tmp = Integer.parseInt(str, 16);
 		buffer[addr++] = (byte) (tmp & 0xFF);
 		buffer[addr++] = (byte) ((tmp >> 8) & 0xFF);
 	}
@@ -258,7 +469,7 @@ public class Assembler6502 {
 	public static void parseAbsoluteIndirect(byte opcode) {
 		buffer[addr++] = opcode;
 		String str = scanner.next(PATTERN_ADDR_ABSOLUTE_INDIRECT).substring(2, 6);
-		short tmp = Short.parseShort(str, 16);
+		int tmp = Integer.parseInt(str, 16);
 		buffer[addr++] = (byte) (tmp & 0xFF);
 		buffer[addr++] = (byte) ((tmp >> 8) & 0xFF);
 	}
@@ -270,7 +481,7 @@ public class Assembler6502 {
 	public static void parseImmediate(byte opcode) {
 		buffer[addr++] = opcode;
 		String str = scanner.next(PATTERN_ADDR_IMMEDIATE).substring(2, 6);
-		short tmp = Short.parseShort(str, 16);
+		int tmp = Integer.parseInt(str, 16);
 		buffer[addr++] = (byte) (tmp & 0xFF);
 		buffer[addr++] = (byte) ((tmp >> 8) & 0xFF);
 	}
@@ -282,7 +493,7 @@ public class Assembler6502 {
 	public static void parseZeropage(byte opcode) {
 		buffer[addr++] = opcode;
 		String str = scanner.next(PATTERN_ADDR_ZEROPAGE).substring(1, 3);
-		buffer[addr++] = Byte.parseByte(str, 16);
+		buffer[addr++] = (byte) Integer.parseInt(str, 16);
 	}
 	
 	public static boolean hasZeropageIndexedIndirect() {
@@ -292,7 +503,7 @@ public class Assembler6502 {
 	public static void parseZeropageIndexedIndirect(byte opcode) {
 		buffer[addr++] = opcode;
 		String str = scanner.next(PATTERN_ADDR_ZEROPAGE_INDEXED_INDIRECT).split(",")[0].substring(2, 4);
-		buffer[addr++] = Byte.parseByte(str, 16);
+		buffer[addr++] = (byte) Integer.parseInt(str, 16);
 	}
 	
 	public static boolean hasZeropageXIndexed() {
@@ -302,7 +513,7 @@ public class Assembler6502 {
 	public static void parseZeropageXIndexed(byte opcode) {
 		buffer[addr++] = opcode;
 		String str = scanner.next(PATTERN_ADDR_ZEROPAGE_INDEXED_X).split(",")[0].substring(1, 3);
-		buffer[addr++] = Byte.parseByte(str, 16);
+		buffer[addr++] = (byte) Integer.parseInt(str, 16);
 	}
 	
 	public static boolean hasZeropageYIndexed() {
@@ -312,7 +523,7 @@ public class Assembler6502 {
 	public static void parseZeropageYIndexed(byte opcode) {
 		buffer[addr++] = opcode;
 		String str = scanner.next(PATTERN_ADDR_ZEROPAGE_INDEXED_Y).split(",")[0].substring(1, 3);
-		buffer[addr++] = Byte.parseByte(str, 16);
+		buffer[addr++] = (byte) Integer.parseInt(str, 16);
 	}
 	
 	public static boolean hasZeropageIndirect() {
@@ -322,7 +533,7 @@ public class Assembler6502 {
 	public static void parseZeropageIndirect(byte opcode) {
 		buffer[addr++] = opcode;
 		String str = scanner.next(PATTERN_ADDR_ZEROPAGE_INDIRECT).split(")")[0].substring(1, 3);
-		buffer[addr++] = Byte.parseByte(str, 16);
+		buffer[addr++] = (byte) Integer.parseInt(str, 16);
 	}
 	
 	public static boolean hasZeropageIndirectYIndexed() {
@@ -332,7 +543,7 @@ public class Assembler6502 {
 	public static void parseZeropageIndirectYIndexed(byte opcode) {
 		buffer[addr++] = opcode;
 		String str = scanner.next(PATTERN_ADDR_ZEROPAGE_INDIRECT_INDEXED_Y).split(",")[0].substring(2, 4);
-		buffer[addr++] = Byte.parseByte(str, 16);
+		buffer[addr++] = (byte) Integer.parseInt(str, 16);
 	}
 	
 }
