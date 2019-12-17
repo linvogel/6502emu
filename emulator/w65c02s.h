@@ -211,7 +211,7 @@
 #define OP_TAY_IMPLIED								0xA8
 #define OP_LDA_IMMEDIATE							0xA9
 #define OP_TAX_IMPLIED								0xAA
-#define OP_LDY_ACCUMULATOR							0xAC
+#define OP_LDY_ABSOLUTE								0xAC
 #define OP_LDA_ABSOLUTE								0xAD
 #define OP_LDX_ABSOLUTE								0xAE
 #define OP_BBS2_RELATIVE							0xAF
