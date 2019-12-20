@@ -643,7 +643,7 @@ void   tsb_zeropage(struct W65C02S* instance)
 	if (instance->timingControl == 3) {
 		instance->stateRegister = (instance->a & instance->dataBus) ? instance->stateRegister & ~P_ZERO : instance->stateRegister | P_ZERO;
 		instance->dataBus |= instance->a;
-		instance->pins &= ~PIN_RW_B;
+		instance->pins |= PIN_RW_B;
 	}
 	if (instance->timingControl == 4) {
 		instance->internalState = STATE_FETCH_OPCODE;
@@ -771,7 +771,7 @@ void   tsb_absolute(struct W65C02S* instance)
 	if (instance->timingControl == 3) {
 		instance->stateRegister = (instance->a & instance->dataBus) ? instance->stateRegister & ~P_ZERO : instance->stateRegister | P_ZERO;
 		instance->dataBus |= instance->a;
-		instance->pins &= ~PIN_RW_B;
+		instance->pins |= PIN_RW_B;
 	}
 	if (instance->timingControl == 4) {
 		instance->internalState = STATE_FETCH_OPCODE;
@@ -953,7 +953,22 @@ void   ora_zeropage_indirect(struct W65C02S* instance)
 
 void   trb_zeropage(struct W65C02S* instance)
 {
-	//TODO: Implement
+	if (instance->timingControl == 0) {
+		instance->pins |= PIN_RW_B;
+		instance->addressBus = instance->pc++;
+	}
+	if (instance->timingControl == 1) {
+		instance->addressBus = instance->dataBus & 0xff;
+		instance->pins |= PIN_RW_B;
+	}
+	if (instance->timingControl == 3) {
+		instance->stateRegister = (instance->a & instance->dataBus) ? instance->stateRegister & ~P_ZERO : instance->stateRegister | P_ZERO;
+		instance->dataBus |= instance->a;
+		instance->pins &= ~PIN_RW_B;
+	}
+	if (instance->timingControl == 4) {
+		instance->internalState = STATE_FETCH_OPCODE;
+	}
 }
 
 void   ora_zeropage_x_indexed(struct W65C02S* instance)
@@ -976,7 +991,21 @@ void   ora_zeropage_x_indexed(struct W65C02S* instance)
 
 void   asl_zeropage_x_indexed(struct W65C02S* instance)
 {
-	//TODO: Implement
+	if (instance->timingControl == 0) {
+		instance->addressBus = instance->pc++;
+		instance->pins |= PIN_RW_B;
+	}
+	if (instance->timingControl == 1) {
+		instance->addressBus = instance->dataBus + instance->x;
+		instance->pins |= PIN_RW_B;
+	}
+	if (instance->timingControl == 2) {
+		instance->dataBus <<= 1;
+		instance->pins &= ~PIN_RW_B;
+	}
+	if (instance->timingControl == 4) {
+		instance->internalState = STATE_FETCH_OPCODE;
+	}
 }
 
 void   rmb1_zeropage(struct W65C02S* instance)
@@ -1047,7 +1076,28 @@ void   inc_accumulator(struct W65C02S* instance)
 
 void   trb_absolute(struct W65C02S* instance)
 {
-	//TODO: Implement
+	static uint16_t tmp;
+	if (instance->timingControl == 0) {
+		instance->pins |= PIN_RW_B;
+		instance->addressBus = instance->pc++;
+	}
+	if (instance->timingControl == 1) {
+		tmp = instance->dataBus;
+		instance->pins |= PIN_RW_B;
+		instance->addressBus = instance->pc++;
+	}
+	if (instance->timingControl == 2) {
+		instance->addressBus = ((uint16_t)instance->dataBus << 8) | tmp;
+		instance->pins |= PIN_RW_B;
+	}
+	if (instance->timingControl == 3) {
+		instance->stateRegister = (instance->a & instance->dataBus) ? instance->stateRegister & ~P_ZERO : instance->stateRegister | P_ZERO;
+		instance->dataBus |= instance->a;
+		instance->pins &= ~PIN_RW_B;
+	}
+	if (instance->timingControl == 4) {
+		instance->internalState = STATE_FETCH_OPCODE;
+	}
 }
 
 void   ora_absolute_x_indexed(struct W65C02S* instance)
@@ -1080,7 +1130,33 @@ void   ora_absolute_x_indexed(struct W65C02S* instance)
 
 void   asl_absolute_x_indexed(struct W65C02S* instance)
 {
-	//TODO: Implement
+	static uint16_t tmp, page;
+	if (instance->timingControl == 0) {
+		instance->addressBus = instance->pc++;
+		instance->pins |= PIN_RW_B;
+	}
+	if (instance->timingControl == 1) {
+		tmp = instance->dataBus;
+		instance->addressBus = instance->pc++;
+		instance->pins |= PIN_RW_B;
+	}
+	if (instance->timingControl == 2) {
+		tmp = (instance->dataBus << 8) | tmp;
+		instance->addressBus = tmp + instance->x;
+		page = instance->addressBus & 0xff00;
+		instance->pins |= PIN_RW_B;
+	}
+	if (instance->timingControl == 3) {
+		instance->dataBus <<= 1;
+		instance->addressBus = tmp;
+		instance->pins &= ~PIN_RW_B;
+	}
+	if (instance->timingControl == 4) {
+		if ((instance->pc & 0xff00) == page) instance->internalState = STATE_FETCH_OPCODE;
+	}
+	if (instance->timingControl == 5) {
+		instance->internalState = STATE_EXECUTE;
+	}
 }
 
 void   bbr1_relative(struct W65C02S* instance)
@@ -1296,7 +1372,34 @@ void   bmi_relative(struct W65C02S* instance)
 
 void   and_zeropage_indirect_y_indexed(struct W65C02S* instance)
 {
-	//TODO: Implement
+	static uint16_t tmp, page;
+	if (instance->timingControl == 0) {
+		instance->addressBus = instance->pc++;
+		instance->pins |= PIN_RW_B;
+	}
+	if (instance->timingControl == 1) {
+		instance->addressBus = instance->dataBus;
+		instance->pins |= PIN_RW_B;
+	}
+	if (instance->timingControl == 2) {
+		tmp = instance->dataBus;
+		instance->addressBus++;
+		instance->pins |= PIN_RW_B;
+	}
+	if (instance->timingControl == 3) {
+		tmp = (((uint16_t)instance->dataBus) << 8) | (tmp & 0xff);
+		page = instance->addressBus = tmp + instance->y;
+		instance->pins |= PIN_RW_B;
+	}
+	if (instance->timingControl == 4) {
+		instance->a &= instance->dataBus;
+		instance->stateRegister = instance->a ? instance->stateRegister & ~P_ZERO : instance->stateRegister | P_ZERO;
+		instance->stateRegister = (instance->a & 0x80) ? instance->stateRegister | P_NEGATIVE : instance->stateRegister & ~P_NEGATIVE;
+		if (page == (0xff00 & instance->addressBus)) instance->internalState = STATE_FETCH_OPCODE;
+	}
+	if (instance->timingControl == 5) {
+		instance->internalState = STATE_FETCH_OPCODE;
+	}
 }
 
 void   and_zeropage_indirect(struct W65C02S* instance)
@@ -1916,7 +2019,36 @@ void   bvs_relative(struct W65C02S* instance)
 
 void   adc_zeropage_indirect_y_indexed(struct W65C02S* instance)
 {
-	//TODO: Implement
+	static uint16_t tmp, page;
+	if (instance->timingControl == 0) {
+		instance->addressBus = instance->pc++;
+		instance->pins |= PIN_RW_B;
+	}
+	if (instance->timingControl == 1) {
+		instance->addressBus = instance->dataBus;
+		instance->pins |= PIN_RW_B;
+	}
+	if (instance->timingControl == 2) {
+		tmp = instance->dataBus;
+		instance->addressBus++;
+		instance->pins |= PIN_RW_B;
+	}
+	if (instance->timingControl == 3) {
+		tmp = (((uint16_t)instance->dataBus) << 8) | (tmp & 0xff);
+		page = instance->addressBus = tmp + instance->y;
+		instance->pins |= PIN_RW_B;
+	}
+	if (instance->timingControl == 4) {
+		uint16_t res = instance->a + instance->dataBus;
+		instance->a = res & 0xff;
+		instance->stateRegister = res & 0xff00 ? instance->stateRegister | P_CARRY : instance->stateRegister & ~P_CARRY;
+		instance->stateRegister = instance->a ? instance->stateRegister & ~P_ZERO : instance->stateRegister | P_ZERO;
+		instance->stateRegister = (instance->a & 0x80) ? instance->stateRegister | P_NEGATIVE : instance->stateRegister & ~P_NEGATIVE;
+		if (page == (0xff00 & instance->addressBus)) instance->internalState = STATE_FETCH_OPCODE;
+	}
+	if (instance->timingControl == 5) {
+		instance->internalState = STATE_FETCH_OPCODE;
+	}
 }
 
 void   adc_zeropage_indirect(struct W65C02S* instance)
@@ -2260,7 +2392,32 @@ void   bcc_relative(struct W65C02S* instance)
 
 void   sta_zeropage_indirect_y_indexed(struct W65C02S* instance)
 {
-	//TODO: Implement
+	static uint16_t tmp, page;
+	if (instance->timingControl == 0) {
+		instance->addressBus = instance->pc++;
+		instance->pins |= PIN_RW_B;
+	}
+	if (instance->timingControl == 1) {
+		instance->addressBus = instance->dataBus;
+		instance->pins |= PIN_RW_B;
+	}
+	if (instance->timingControl == 2) {
+		tmp = instance->dataBus;
+		instance->addressBus++;
+		instance->pins |= PIN_RW_B;
+	}
+	if (instance->timingControl == 3) {
+		tmp = (((uint16_t)instance->dataBus) << 8) | (tmp & 0xff);
+		instance->dataBus = instance->a;
+		page = instance->addressBus = tmp + instance->y;
+		instance->pins &= ~PIN_RW_B;
+	}
+	if (instance->timingControl == 4) {
+		if (page == (0xff00 & instance->addressBus)) instance->internalState = STATE_FETCH_OPCODE;
+	}
+	if (instance->timingControl == 5) {
+		instance->internalState = STATE_FETCH_OPCODE;
+	}
 }
 
 void   sta_zeropage_indirect(struct W65C02S* instance)
@@ -2528,12 +2685,62 @@ void   bcs_relative(struct W65C02S* instance)
 
 void   lda_zeropage_indirect_y_indexed(struct W65C02S* instance)
 {
-	//TODO: Implement
+	static uint16_t tmp, page;
+	if (instance->timingControl == 0) {
+		instance->addressBus = instance->pc++;
+		instance->pins |= PIN_RW_B;
+	}
+	if (instance->timingControl == 1) {
+		instance->addressBus = instance->dataBus;
+		instance->pins |= PIN_RW_B;
+	}
+	if (instance->timingControl == 2) {
+		tmp = instance->dataBus;
+		instance->addressBus++;
+		instance->pins |= PIN_RW_B;
+	}
+	if (instance->timingControl == 3) {
+		tmp = (((uint16_t)instance->dataBus) << 8) | (tmp & 0xff);
+		page = instance->addressBus = tmp + instance->y;
+		instance->pins &= ~PIN_RW_B;
+	}
+	if (instance->timingControl == 4) {
+		instance->a = instance->dataBus;
+		if (page == (0xff00 & instance->addressBus)) instance->internalState = STATE_FETCH_OPCODE;
+	}
+	if (instance->timingControl == 5) {
+		instance->internalState = STATE_FETCH_OPCODE;
+	}
 }
 
 void   lda_zeropage_indirect(struct W65C02S* instance)
 {
-	//TODO: Implement
+	static uint16_t tmp, page;
+	if (instance->timingControl == 0) {
+		instance->addressBus = instance->pc++;
+		instance->pins |= PIN_RW_B;
+	}
+	if (instance->timingControl == 1) {
+		instance->addressBus = instance->dataBus;
+		instance->pins |= PIN_RW_B;
+	}
+	if (instance->timingControl == 2) {
+		tmp = instance->dataBus;
+		instance->addressBus++;
+		instance->pins |= PIN_RW_B;
+	}
+	if (instance->timingControl == 3) {
+		tmp = (((uint16_t)instance->dataBus) << 8) | (tmp & 0xff);
+		page = instance->addressBus = tmp;
+		instance->pins &= ~PIN_RW_B;
+	}
+	if (instance->timingControl == 4) {
+		instance->a = instance->dataBus;
+		if (page == (0xff00 & instance->addressBus)) instance->internalState = STATE_FETCH_OPCODE;
+	}
+	if (instance->timingControl == 5) {
+		instance->internalState = STATE_FETCH_OPCODE;
+	}
 }
 
 void   ldy_zeropage_x_indexed(struct W65C02S* instance)
@@ -2909,7 +3116,36 @@ void   cpx_immediate(struct W65C02S* instance)
 
 void   sbc_zeropage_indexed_indirect(struct W65C02S* instance)
 {
-	//TODO: Implement
+	static uint16_t tmp, page;
+	if (instance->timingControl == 0) {
+		instance->addressBus = instance->pc++;
+		instance->pins |= PIN_RW_B;
+	}
+	if (instance->timingControl == 1) {
+		instance->addressBus = instance->dataBus + instance->y;
+		instance->pins |= PIN_RW_B;
+	}
+	if (instance->timingControl == 2) {
+		tmp = instance->dataBus;
+		instance->addressBus++;
+		instance->pins |= PIN_RW_B;
+	}
+	if (instance->timingControl == 3) {
+		tmp = (((uint16_t)instance->dataBus) << 8) | (tmp & 0xff);
+		page = instance->addressBus = tmp;
+		instance->pins &= ~PIN_RW_B;
+	}
+	if (instance->timingControl == 4) {
+		uint16_t res = instance->a - instance->dataBus;
+		instance->stateRegister = (res & 0xff00 && ~res & 0xff00) ? instance->stateRegister | P_CARRY : instance->stateRegister & ~P_CARRY;
+		instance->stateRegister = res ? instance->stateRegister & ~P_ZERO : instance->stateRegister | P_ZERO;
+		instance->stateRegister = (res & 0x80) ? instance->stateRegister | P_NEGATIVE : instance->stateRegister & ~P_NEGATIVE;
+		instance->a = res;
+		if (page == (0xff00 & instance->addressBus)) instance->internalState = STATE_FETCH_OPCODE;
+	}
+	if (instance->timingControl == 5) {
+		instance->internalState = STATE_FETCH_OPCODE;
+	}
 }
 
 void   cpx_zeropage(struct W65C02S* instance)
@@ -2919,12 +3155,48 @@ void   cpx_zeropage(struct W65C02S* instance)
 
 void   sbc_zeropage(struct W65C02S* instance)
 {
-	//TODO: Implement
+	static uint16_t tmp, page;
+	if (instance->timingControl == 0) {
+		instance->addressBus = instance->pc++;
+		instance->pins |= PIN_RW_B;
+	}
+	if (instance->timingControl == 1) {
+		instance->addressBus = instance->dataBus;
+		instance->pins |= PIN_RW_B;
+	}
+	if (instance->timingControl == 2) {
+		uint16_t res = instance->a - instance->dataBus;
+		instance->stateRegister = (res & 0xff00 && ~res & 0xff00) ? instance->stateRegister | P_CARRY : instance->stateRegister & ~P_CARRY;
+		instance->stateRegister = res ? instance->stateRegister & ~P_ZERO : instance->stateRegister | P_ZERO;
+		instance->stateRegister = (res & 0x80) ? instance->stateRegister | P_NEGATIVE : instance->stateRegister & ~P_NEGATIVE;
+		instance->a = res;
+		if (page == (0xff00 & instance->addressBus)) instance->internalState = STATE_FETCH_OPCODE;
+	}
+	if (instance->timingControl == 5) {
+		instance->internalState = STATE_FETCH_OPCODE;
+	}
 }
 
 void   inc_zeropage(struct W65C02S* instance)
 {
-	//TODO: Implement
+	if (instance->timingControl == 0) {
+		instance->addressBus = instance->pc++;
+		instance->pins |= PIN_RW_B;
+	}
+	if (instance->timingControl == 1) {
+		instance->addressBus = instance->dataBus;
+		instance->pins |= PIN_RW_B;
+	}
+	if (instance->timingControl == 3) {
+		instance->dataBus++;
+		instance->stateRegister = instance->dataBus ? instance->stateRegister & ~P_ZERO : instance->stateRegister | P_ZERO;
+		instance->stateRegister = (instance->dataBus & 0x80) ? instance->stateRegister | P_NEGATIVE : instance->stateRegister & ~P_ZERO;
+		instance->pins &= ~PIN_RW_B;
+	}
+	if (instance->timingControl == 4) {
+		instance->pins |= PIN_RW_B;
+		instance->internalState = STATE_FETCH_OPCODE;
+	}
 }
 
 void   smb6_zeropage(struct W65C02S* instance)
@@ -2959,7 +3231,18 @@ void   inx_implied(struct W65C02S* instance)
 
 void   sbc_immediate(struct W65C02S* instance)
 {
-	//TODO: Implement
+	if (instance->timingControl == 0) {
+		instance->addressBus = instance->pc++;
+		instance->pins |= PIN_RW_B;
+	}
+	if (instance->timingControl == 1) {
+		uint16_t res = instance->a - instance->dataBus;
+		instance->stateRegister = (res & 0xff00 && ~res & 0xff00) ? instance->stateRegister | P_CARRY : instance->stateRegister & ~P_CARRY;
+		instance->stateRegister = res ? instance->stateRegister & ~P_ZERO : instance->stateRegister | P_ZERO;
+		instance->stateRegister = (res & 0x80) ? instance->stateRegister | P_NEGATIVE : instance->stateRegister & ~P_NEGATIVE;
+		instance->a = res;
+		instance->internalState = STATE_FETCH_OPCODE;
+	}
 }
 
 void   nop_implied(struct W65C02S* instance)
@@ -2974,12 +3257,64 @@ void   cpx_absolute(struct W65C02S* instance)
 
 void   sbc_absolute(struct W65C02S* instance)
 {
-	//TODO: Implement
+	static uint16_t tmp;
+	if (instance->timingControl == 0) {
+		instance->addressBus = instance->pc++;
+		instance->pins |= PIN_RW_B;
+	}
+	if (instance->timingControl == 1) {
+		tmp = instance->dataBus;
+		instance->addressBus = instance->pc++;
+		instance->pins |= PIN_RW_B;
+	}
+	if (instance->timingControl == 2) {
+		tmp = ((uint16_t)instance->dataBus << 8) | tmp;
+		instance->addressBus = tmp;
+		instance->pins |= PIN_RW_B;
+	}
+	if (instance->timingControl == 3) {
+		uint16_t res = instance->a - instance->dataBus;
+		instance->stateRegister = (res & 0xff00 && ~res & 0xff00) ? instance->stateRegister | P_CARRY : instance->stateRegister & ~P_CARRY;
+		instance->stateRegister = res ? instance->stateRegister & ~P_ZERO : instance->stateRegister | P_ZERO;
+		instance->stateRegister = (res & 0x80) ? instance->stateRegister | P_NEGATIVE : instance->stateRegister & ~P_NEGATIVE;
+		instance->a = res;
+		if ((instance->pc & 0xff00) == (0xff00 & instance->addressBus)) instance->internalState = STATE_FETCH_OPCODE;
+	}
+	if (instance->timingControl == 5) {
+		instance->internalState = STATE_FETCH_OPCODE;
+	}
 }
 
 void   inc_absolute(struct W65C02S* instance)
 {
-	//TODO: Implement
+	static uint16_t tmp;
+	if (instance->timingControl == 0) {
+		instance->addressBus = instance->pc++;
+		instance->pins |= PIN_RW_B;
+	}
+	if (instance->timingControl == 1) {
+		tmp = instance->dataBus;
+		instance->addressBus = instance->pc++;
+		instance->pins |= PIN_RW_B;
+	}
+	if (instance->timingControl == 2) {
+		tmp = tmp | ((uint16_t)instance->dataBus << 8);
+		instance->addressBus = tmp;
+		instance->pins |= PIN_RW_B;
+	}
+	if (instance->timingControl == 3) {
+		instance->dataBus++;
+		instance->stateRegister = instance->dataBus ? instance->stateRegister & ~P_ZERO : instance->stateRegister | P_ZERO;
+		instance->stateRegister = (instance->dataBus & 0x80) ? instance->stateRegister | P_NEGATIVE : instance->stateRegister & ~P_ZERO;
+		instance->pins &= ~PIN_RW_B;
+	}
+	if (instance->timingControl == 4) {
+		instance->pins |= PIN_RW_B;
+		if ((tmp & 0xff00) == (instance->pc & 0xff00)) instance->internalState = STATE_FETCH_OPCODE;
+	}
+	if (instance->timingControl == 5) {
+		instance->internalState = STATE_FETCH_OPCODE;
+	}
 }
 
 void   bbs6_relative(struct W65C02S* instance)
@@ -3043,17 +3378,91 @@ void   beq_relative(struct W65C02S* instance)
 
 void   sbc_zeropage_indirect_y_indexed(struct W65C02S* instance)
 {
-	//TODO: Implement
+	static uint16_t tmp, page;
+	if (instance->timingControl == 0) {
+		instance->addressBus = instance->pc++;
+		instance->pins |= PIN_RW_B;
+	}
+	if (instance->timingControl == 1) {
+		instance->addressBus = instance->dataBus;
+		instance->pins |= PIN_RW_B;
+	}
+	if (instance->timingControl == 2) {
+		tmp = instance->dataBus;
+		instance->addressBus++;
+		instance->pins |= PIN_RW_B;
+	}
+	if (instance->timingControl == 3) {
+		tmp = (((uint16_t)instance->dataBus) << 8) | (tmp & 0xff);
+		page = instance->addressBus = tmp + instance->y;
+		instance->pins &= ~PIN_RW_B;
+	}
+	if (instance->timingControl == 4) {
+		uint16_t res = instance->a - instance->dataBus;
+		instance->stateRegister = (res & 0xff00 && ~res & 0xff00) ? instance->stateRegister | P_CARRY : instance->stateRegister & ~P_CARRY;
+		instance->stateRegister = res ? instance->stateRegister & ~P_ZERO : instance->stateRegister | P_ZERO;
+		instance->stateRegister = (res & 0x80) ? instance->stateRegister | P_NEGATIVE : instance->stateRegister & ~P_NEGATIVE;
+		instance->a = res;
+		if (page == (0xff00 & instance->addressBus)) instance->internalState = STATE_FETCH_OPCODE;
+	}
+	if (instance->timingControl == 5) {
+		instance->internalState = STATE_FETCH_OPCODE;
+	}
 }
 
 void   sbc_zeropage_indirect(struct W65C02S* instance)
 {
-	//TODO: Implement
+	static uint16_t tmp, page;
+	if (instance->timingControl == 0) {
+		instance->addressBus = instance->pc++;
+		instance->pins |= PIN_RW_B;
+	}
+	if (instance->timingControl == 1) {
+		instance->addressBus = instance->dataBus;
+		instance->pins |= PIN_RW_B;
+	}
+	if (instance->timingControl == 2) {
+		tmp = instance->dataBus;
+		instance->addressBus++;
+		instance->pins |= PIN_RW_B;
+	}
+	if (instance->timingControl == 3) {
+		tmp = (((uint16_t)instance->dataBus) << 8) | (tmp & 0xff);
+		page = instance->addressBus = tmp;
+		instance->pins &= ~PIN_RW_B;
+	}
+	if (instance->timingControl == 4) {
+		uint16_t res = instance->a - instance->dataBus;
+		instance->stateRegister = (res & 0xff00 && ~res & 0xff00) ? instance->stateRegister | P_CARRY : instance->stateRegister & ~P_CARRY;
+		instance->stateRegister = res ? instance->stateRegister & ~P_ZERO : instance->stateRegister | P_ZERO;
+		instance->stateRegister = (res & 0x80) ? instance->stateRegister | P_NEGATIVE : instance->stateRegister & ~P_NEGATIVE;
+		instance->a = res;
+		if (page == (0xff00 & instance->addressBus)) instance->internalState = STATE_FETCH_OPCODE;
+	}
+	if (instance->timingControl == 5) {
+		instance->internalState = STATE_FETCH_OPCODE;
+	}
 }
 
 void   sbc_zeropage_x_indexed(struct W65C02S* instance)
 {
-	//TODO: Implement
+	static uint16_t tmp, page;
+	if (instance->timingControl == 0) {
+		instance->addressBus = instance->pc++;
+		instance->pins |= PIN_RW_B;
+	}
+	if (instance->timingControl == 1) {
+		instance->addressBus = instance->dataBus + instance->x;
+		instance->pins |= PIN_RW_B;
+	}
+	if (instance->timingControl == 2) {
+		uint16_t res = instance->a - instance->dataBus;
+		instance->stateRegister = (res & 0xff00 && ~res & 0xff00) ? instance->stateRegister | P_CARRY : instance->stateRegister & ~P_CARRY;
+		instance->stateRegister = res ? instance->stateRegister & ~P_ZERO : instance->stateRegister | P_ZERO;
+		instance->stateRegister = (res & 0x80) ? instance->stateRegister | P_NEGATIVE : instance->stateRegister & ~P_NEGATIVE;
+		instance->a = res;
+		instance->internalState = STATE_FETCH_OPCODE;
+	}
 }
 
 void   inc_zeropage_x_indexed(struct W65C02S* instance)
@@ -3091,7 +3500,32 @@ void   sed_implied(struct W65C02S* instance)
 
 void   sbc_absolute_y_indexed(struct W65C02S* instance)
 {
-	//TODO: Implement
+	static uint16_t tmp, page;
+	if (instance->timingControl == 0) {
+		instance->addressBus = instance->pc++;
+		instance->pins |= PIN_RW_B;
+	}
+	if (instance->timingControl == 1) {
+		tmp = instance->dataBus;
+		instance->addressBus = instance->pc++;
+		instance->pins |= PIN_RW_B;
+	}
+	if (instance->timingControl == 2) {
+		tmp = (((uint16_t)instance->dataBus) << 8) | (tmp & 0xff);
+		page = instance->addressBus = tmp + instance->y;
+		instance->pins |= PIN_RW_B;
+	}
+	if (instance->timingControl == 4) {
+		uint16_t res = instance->a - instance->dataBus;
+		instance->stateRegister = (res & 0xff00 && ~res & 0xff00) ? instance->stateRegister | P_CARRY : instance->stateRegister & ~P_CARRY;
+		instance->stateRegister = res ? instance->stateRegister & ~P_ZERO : instance->stateRegister | P_ZERO;
+		instance->stateRegister = (res & 0x80) ? instance->stateRegister | P_NEGATIVE : instance->stateRegister & ~P_NEGATIVE;
+		instance->a = res;
+		if (page == (0xff00 & instance->addressBus)) instance->internalState = STATE_FETCH_OPCODE;
+	}
+	if (instance->timingControl == 5) {
+		instance->internalState = STATE_FETCH_OPCODE;
+	}
 }
 
 void   plx_stack(struct W65C02S* instance)
